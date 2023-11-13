@@ -21,12 +21,12 @@ enum Months {
     Dec = 12,
 }
 
-fn date_split(date_str: &str) -> Option<(&str, &str, &str)> {
+fn date_split(date_str: &str) -> Result<(&str, &str, &str), &'static str> {
     let mut parts = date_str.split_whitespace();
-    let month = parts.next()?;
-    let day = parts.next()?;
-    let year = parts.next()?;
-    Some((month, day, year))
+    let month = parts.next().ok_or("No month")?;
+    let day = parts.next().ok_or("No day")?;
+    let year = parts.next().ok_or("No year")?;
+    Ok((month, day, year))
 }
 
 impl std::str::FromStr for Months {
@@ -57,19 +57,25 @@ impl From<Months> for u32 {
     }
 }
 
-pub fn convert_date(date_str: &str) -> Option<NaiveDate> {
+pub fn convert_date(date_str: &str) -> Result<NaiveDate, &'static str> {
     let date_str = remove_prefix(date_str);
     let (month_str, day_str, year_str) = date_split(date_str)?;
-    let month = month_str.parse::<Months>().ok()?.into();
-    let day = day_str.trim_end_matches(',').parse::<u32>().ok()?;
-    let year = year_str.parse::<i32>().ok()?;
-    NaiveDate::from_ymd_opt(year, month, day)
+    let month = month_str.parse::<Months>()?.into();
+    let day = day_str
+        .trim_end_matches(',')
+        .parse::<u32>()
+        .map_err(|_| "Invalid day")?;
+    let year = year_str.parse::<i32>().map_err(|_| "Invalid year")?;
+    NaiveDate::from_ymd_opt(year, month, day).ok_or("Invalid date")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     const DATE_STR: &str = "Reviewed Sept. 13, 2023";
+    const DATE_STR_2: &str = "Reviewed June 30, 2020";
+    const DATE_STR_3: &str = "Reviewed Jan. 1, 2001";
+
     #[test]
     fn test_remove_prefix() {
         let date_str = remove_prefix(DATE_STR);
@@ -78,10 +84,19 @@ mod tests {
 
     #[test]
     fn test_convert_date() {
-        let converted_date = convert_date(DATE_STR).unwrap();
         assert_eq!(
-            converted_date,
+            convert_date(DATE_STR).unwrap(),
             NaiveDate::from_ymd_opt(2023, 9, 13).expect("invalid date")
+        );
+
+        assert_eq!(
+            convert_date(DATE_STR_2).unwrap(),
+            NaiveDate::from_ymd_opt(2020, 6, 30).expect("invalid date")
+        );
+
+        assert_eq!(
+            convert_date(DATE_STR_3).unwrap(),
+            NaiveDate::from_ymd_opt(2001, 1, 1).expect("invalid date")
         );
     }
 }
