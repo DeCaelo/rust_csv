@@ -18,10 +18,11 @@ struct Review {
 
 fn main() {
     let mut csv_reader = csv::Reader::from_path("reviews_data.csv").unwrap();
-    let review_rows = csv_reader
+    let mut review_rows = csv_reader
         .deserialize()
         .map(|r| r.unwrap())
         .collect::<Vec<Review>>();
     println!("Read {} rows", review_rows.len());
+    review_rows.sort_by_key(|r| r.date);
     review_rows.iter().take(3).for_each(|r| println!("{:?}", r));
 }
