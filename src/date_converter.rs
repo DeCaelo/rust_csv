@@ -57,15 +57,25 @@ impl From<Months> for u32 {
     }
 }
 
+#[inline]
+fn parse_day_str(day_str: &str) -> Result<u32, &'static str> {
+    day_str
+        .trim_end_matches(',')
+        .parse::<u32>()
+        .map_err(|_| "Invalid day")
+}
+
+#[inline]
+fn parse_year_str(year_str: &str) -> Result<i32, &'static str> {
+    year_str.parse::<i32>().map_err(|_| "Invalid year")
+}
+
 pub fn convert_date(date_str: &str) -> Result<NaiveDate, &'static str> {
     let date_str = remove_prefix(date_str);
     let (month_str, day_str, year_str) = date_split(date_str)?;
     let month = month_str.parse::<Months>()?.into();
-    let day = day_str
-        .trim_end_matches(',')
-        .parse::<u32>()
-        .map_err(|_| "Invalid day")?;
-    let year = year_str.parse::<i32>().map_err(|_| "Invalid year")?;
+    let day = parse_day_str(day_str)?;
+    let year = parse_year_str(year_str)?;
     NaiveDate::from_ymd_opt(year, month, day).ok_or("Invalid date")
 }
 
