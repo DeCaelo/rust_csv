@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use serde::de::Deserialize;
 
 #[inline]
 fn remove_prefix(date_str: &str) -> &str {
@@ -77,6 +78,14 @@ pub fn convert_date(date_str: &str) -> Result<NaiveDate, &'static str> {
     let day = parse_day_str(day_str)?;
     let year = parse_year_str(year_str)?;
     NaiveDate::from_ymd_opt(year, month, day).ok_or("Invalid date")
+}
+
+pub fn deserialize_date<'de, D>(deserialiser: D) -> Result<NaiveDate, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let date_str: &str = Deserialize::deserialize(deserialiser)?;
+    convert_date(date_str).map_err(serde::de::Error::custom)
 }
 
 #[cfg(test)]
